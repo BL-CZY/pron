@@ -1,234 +1,143 @@
-//use hound::{WavSpec, WavWriter};
-//use std::f32::consts::PI;
-//
-//// Function to generate a sine wave with a specific frequency
-//fn generate_sine_wave(freq: f32, duration_ms: u32, amplitude: f32, sample_rate: u32) -> Vec<i16> {
-//    let num_samples = (duration_ms as f32 * sample_rate as f32 / 1000.0) as usize;
-//    let mut samples = Vec::with_capacity(num_samples);
-//
-//    for i in 0..num_samples {
-//        let t = i as f32 / sample_rate as f32;
-//        let sample = (amplitude * (2.0 * PI * freq * t).sin()) as i16;
-//        samples.push(sample);
-//    }
-//
-//    samples
-//}
-//
-//// Function to apply an amplitude envelope
-//fn apply_envelope(samples: &mut Vec<i16>, attack_ms: u32, release_ms: u32, sample_rate: u32) {
-//    let attack_samples = (attack_ms as f32 * sample_rate as f32 / 1000.0) as usize;
-//    let release_samples = (release_ms as f32 * sample_rate as f32 / 1000.0) as usize;
-//
-//    // Apply attack (fade in)
-//    for i in 0..attack_samples.min(samples.len()) {
-//        let factor = i as f32 / attack_samples as f32;
-//        samples[i] = (samples[i] as f32 * factor) as i16;
-//    }
-//
-//    // Apply release (fade out)
-//    let release_start = samples.len().saturating_sub(release_samples);
-//    for i in release_start..samples.len() {
-//        let factor = (samples.len() - i) as f32 / release_samples as f32;
-//        samples[i] = (samples[i] as f32 * factor) as i16;
-//    }
-//}
-//
-//// Generate /l/ phoneme WAV file
-//fn generate_l_phoneme(output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
-//    // WAV specifications
-//    let spec = WavSpec {
-//        channels: 1,
-//        sample_rate: 16000,
-//        bits_per_sample: 16,
-//        sample_format: hound::SampleFormat::Int,
-//    };
-//
-//    let mut writer = WavWriter::create(output_file, spec)?;
-//
-//    // /l/ phoneme is characterized by formants around 250-500Hz for F1 and 1200Hz for F2
-//    // Generate a complex tone with these frequencies
-//    let mut samples1 = generate_sine_wave(350.0, 300, 8000.0, spec.sample_rate);
-//    let mut samples2 = generate_sine_wave(1200.0, 300, 4000.0, spec.sample_rate);
-//
-//    // Apply envelope to make it sound more natural
-//    apply_envelope(&mut samples1, 50, 100, spec.sample_rate);
-//    apply_envelope(&mut samples2, 50, 100, spec.sample_rate);
-//
-//    // Combine the formants
-//    let mut combined_samples = Vec::with_capacity(samples1.len());
-//    for i in 0..samples1.len() {
-//        combined_samples.push(samples1[i] / 2 + samples2[i] / 2);
-//    }
-//
-//    // Write to file
-//    for sample in combined_samples {
-//        writer.write_sample(sample)?;
-//    }
-//
-//    writer.finalize()?;
-//    println!("Generated {}", output_file);
-//    Ok(())
-//}
-//
-//// Generate /an/ phoneme WAV file
-//fn generate_an_phoneme(output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
-//    // WAV specifications
-//    let spec = WavSpec {
-//        channels: 1,
-//        sample_rate: 16000,
-//        bits_per_sample: 16,
-//        sample_format: hound::SampleFormat::Int,
-//    };
-//
-//    let mut writer = WavWriter::create(output_file, spec)?;
-//
-//    // First generate /a/ sound
-//    // /a/ phoneme has formants around 800Hz for F1 and 1200Hz for F2
-//    let mut a_samples1 = generate_sine_wave(800.0, 200, 10000.0, spec.sample_rate);
-//    let mut a_samples2 = generate_sine_wave(1200.0, 200, 5000.0, spec.sample_rate);
-//
-//    apply_envelope(&mut a_samples1, 40, 30, spec.sample_rate);
-//    apply_envelope(&mut a_samples2, 40, 30, spec.sample_rate);
-//
-//    // Then generate /n/ sound
-//    // /n/ phoneme has formants around 300Hz for F1 and 1450Hz for F2 with some nasal resonance
-//    let mut n_samples1 = generate_sine_wave(300.0, 200, 8000.0, spec.sample_rate);
-//    let mut n_samples2 = generate_sine_wave(1450.0, 200, 4000.0, spec.sample_rate);
-//    let mut n_samples3 = generate_sine_wave(2500.0, 200, 2000.0, spec.sample_rate); // Nasal resonance
-//
-//    apply_envelope(&mut n_samples1, 30, 60, spec.sample_rate);
-//    apply_envelope(&mut n_samples2, 30, 60, spec.sample_rate);
-//    apply_envelope(&mut n_samples3, 30, 60, spec.sample_rate);
-//
-//    // Combine the /a/ formants
-//    let mut a_combined = Vec::with_capacity(a_samples1.len());
-//    for i in 0..a_samples1.len() {
-//        a_combined.push(a_samples1[i] / 2 + a_samples2[i] / 2);
-//    }
-//
-//    // Combine the /n/ formants
-//    let mut n_combined = Vec::with_capacity(n_samples1.len());
-//    for i in 0..n_samples1.len() {
-//        n_combined.push(n_samples1[i] / 3 + n_samples2[i] / 3 + n_samples3[i] / 3);
-//    }
-//
-//    // Combine /a/ and /n/ with a small crossfade
-//    let crossfade_samples = 400;
-//    let mut an_combined = Vec::new();
-//
-//    // Add /a/ samples
-//    for i in 0..(a_combined.len() - crossfade_samples) {
-//        an_combined.push(a_combined[i]);
-//    }
-//
-//    // Crossfade
-//    for i in 0..crossfade_samples {
-//        let a_weight = (crossfade_samples - i) as f32 / crossfade_samples as f32;
-//        let n_weight = i as f32 / crossfade_samples as f32;
-//
-//        let sample = (a_combined[a_combined.len() - crossfade_samples + i] as f32 * a_weight
-//            + n_combined[i] as f32 * n_weight) as i16;
-//
-//        an_combined.push(sample);
-//    }
-//
-//    // Add remaining /n/ samples
-//    for i in crossfade_samples..n_combined.len() {
-//        an_combined.push(n_combined[i]);
-//    }
-//
-//    // Write to file
-//    for sample in an_combined {
-//        writer.write_sample(sample)?;
-//    }
-//
-//    writer.finalize()?;
-//    println!("Generated {}", output_file);
-//    Ok(())
-//}
-//
-//fn main() -> Result<(), Box<dyn std::error::Error>> {
-//    generate_l_phoneme("l.wav")?;
-//    generate_an_phoneme("an.wav")?;
-//    println!("Successfully generated both phoneme files!");
-//    Ok(())
-//}
-//
+pub mod parser;
+pub mod sound;
 
 use hound::{WavReader, WavWriter};
+use parser::{Letter, LetterLiteral};
+use sound::murph_sound;
+use std::path::PathBuf;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Open the input files
-    let mut l_reader = WavReader::open("l.wav")?;
-    let mut an_reader = WavReader::open("an.wav")?;
+// Helper function to check if a letter is a vowel in Maltese
+fn is_vowel(letter: &LetterLiteral) -> bool {
+    matches!(
+        letter,
+        LetterLiteral::A
+            | LetterLiteral::E
+            | LetterLiteral::I
+            | LetterLiteral::IE
+            | LetterLiteral::O
+            | LetterLiteral::U
+    )
+}
 
-    // Get specifications
-    let spec = l_reader.spec();
+// Helper function to check if a letter is a consonant in Maltese
+fn is_consonant(letter: &LetterLiteral) -> bool {
+    !is_vowel(letter)
+}
 
-    // Check if specs match
-    if spec != an_reader.spec() {
-        println!("Warning: Audio files have different formats!");
-    }
+// Function to append a sound file to another
+fn append_sound(
+    target_path: &PathBuf,
+    source_path: &PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Open the source file
+    let mut reader = WavReader::open(source_path)?;
+    let spec = reader.spec();
 
-    // Read all samples into vectors
-    let l_samples: Vec<i16> = l_reader
-        .samples::<i16>()
-        .collect::<std::result::Result<Vec<i16>, _>>()?;
-    let an_samples: Vec<i16> = an_reader
-        .samples::<i16>()
-        .collect::<std::result::Result<Vec<i16>, _>>()?;
+    // If the target file doesn't exist, create it with the same spec as the source
+    let target_exists = std::path::Path::new(target_path).exists();
 
-    // Create a writer for the output file
-    let mut writer = WavWriter::create("lan.wav", spec)?;
+    if !target_exists {
+        let mut writer = WavWriter::create(target_path, spec)?;
 
-    // Determine crossfade length (in samples)
-    // Experiment with this value based on your specific audio files
-    let crossfade_len = 500; // About 30ms at 16kHz
+        // Copy samples from source to target
+        for sample in reader.samples::<i16>() {
+            writer.write_sample(sample?)?;
+        }
 
-    // Find where to start the crossfade
-    // Trim the /l/ file to remove trailing silence (if any)
-    let mut l_end = l_samples.len();
-    while l_end > 0 && l_samples[l_end - 1].abs() < 500 {
-        l_end -= 1;
-    }
-
-    // Find where the /an/ phoneme actually starts (detect onset)
-    let mut an_start = 0;
-    while an_start < an_samples.len() && an_samples[an_start].abs() < 500 {
-        an_start += 1;
-    }
-
-    // Write the first part of l.wav (before crossfade)
-    let crossfade_start = if l_end > crossfade_len {
-        l_end - crossfade_len
+        writer.finalize()?;
     } else {
-        0
-    };
-    for i in 0..crossfade_start {
-        writer.write_sample(l_samples[i])?;
+        // If the target exists, we need to append to it
+        let mut reader_target = WavReader::open(target_path)?;
+        let target_spec = reader_target.spec();
+
+        // Ensure the specifications match
+        if spec.channels != target_spec.channels
+            || spec.sample_rate != target_spec.sample_rate
+            || spec.sample_format != target_spec.sample_format
+        {
+            return Err("Source and target WAV files have different specifications".into());
+        }
+
+        // Read all samples from the target file
+        let mut target_samples: Vec<i16> = reader_target
+            .samples::<i16>()
+            .collect::<Result<Vec<i16>, _>>()?;
+
+        // Append samples from the source file
+        let source_samples: Vec<i16> = reader.samples::<i16>().collect::<Result<Vec<i16>, _>>()?;
+        target_samples.extend(source_samples);
+
+        // Create a new writer to replace the target file
+        let mut writer = WavWriter::create(target_path, spec)?;
+
+        // Write all samples back
+        for sample in target_samples {
+            writer.write_sample(sample)?;
+        }
+
+        writer.finalize()?;
     }
 
-    // Perform crossfade
-    for i in 0..crossfade_len {
-        if crossfade_start + i < l_samples.len() && an_start + i < an_samples.len() {
-            let l_weight = (crossfade_len - i) as f32 / crossfade_len as f32;
-            let an_weight = i as f32 / crossfade_len as f32;
+    Ok(())
+}
 
-            let blended_sample = (l_samples[crossfade_start + i] as f32 * l_weight
-                + an_samples[an_start + i] as f32 * an_weight)
-                as i16;
+// Main function to process words and create sound files
+fn process_words(words: Vec<Vec<Letter>>) -> Result<(), Box<dyn std::error::Error>> {
+    for (word_index, word) in words.iter().enumerate() {
+        // Create a final.wav file for this word
+        let final_path = PathBuf::from(format!("word_{}_final.wav", word_index));
 
-            writer.write_sample(blended_sample)?;
+        // Delete the file if it exists
+        if final_path.exists() {
+            std::fs::remove_file(&final_path)?;
+        }
+
+        // Process each letter in the word
+        let mut i = 0;
+        while i < word.len() {
+            let current_letter = &word[i].letter;
+            let current_sound_path = current_letter.get_sound_path();
+
+            // Check if the current letter is a consonant and the next letter is a vowel
+            if i + 1 < word.len() && is_consonant(current_letter) && is_vowel(&word[i + 1].letter) {
+                let next_letter = &word[i + 1].letter;
+                let next_sound_path = next_letter.get_sound_path();
+
+                // Murph the sounds together
+                let murphed_sound_path = murph_sound(&current_sound_path, &next_sound_path)?;
+
+                // Append the murphed sound to final.wav
+                append_sound(&final_path, &murphed_sound_path)?;
+
+                // Skip the next letter since we've processed it
+                i += 2;
+            } else {
+                // Just append the current letter's sound to final.wav
+                append_sound(&final_path, &current_sound_path)?;
+
+                // Move to the next letter
+                i += 1;
+            }
         }
     }
 
-    // Write the rest of an.wav (after crossfade)
-    for i in (an_start + crossfade_len)..an_samples.len() {
-        writer.write_sample(an_samples[i])?;
-    }
+    Ok(())
+}
 
-    writer.finalize()?;
-    println!("Successfully created lan.wav with smooth transition!");
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = std::env::args();
+    let words = args.skip(1).try_fold(
+        vec![],
+        |mut words, ele| -> Result<Vec<Vec<Letter>>, Box<dyn std::error::Error>> {
+            let parsed = parser::parse(&ele)?;
+
+            words.push(parsed);
+            Ok(words)
+        },
+    )?;
+
+    // Process the words to create the final sound files
+    process_words(words)?;
+
     Ok(())
 }
