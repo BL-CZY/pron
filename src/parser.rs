@@ -43,6 +43,7 @@ pub enum LetterLiteral {
     Y,
     Ż,
     Z,
+    AW,
 }
 
 impl LetterLiteral {
@@ -80,6 +81,7 @@ impl LetterLiteral {
             LetterLiteral::Y => "y.wav",
             LetterLiteral::Ż => "z-dot.wav",
             LetterLiteral::Z => "z.wav",
+            LetterLiteral::AW => "aw.wav",
         };
 
         PathBuf::from("sounds").join(filename)
@@ -104,7 +106,18 @@ pub fn parse(input: &str) -> Result<Vec<Letter>, Box<dyn std::error::Error>> {
 
     while let Some(c) = chars.next() {
         let letter_literal = match c {
-            'a' | 'A' => LetterLiteral::A,
+            'a' | 'A' => {
+                if let Some(&next_char) = chars.peek() {
+                    if next_char == 'w' || next_char == 'W' {
+                        chars.next();
+                        LetterLiteral::AW
+                    } else {
+                        LetterLiteral::A
+                    }
+                } else {
+                    LetterLiteral::A
+                }
+            }
             'b' | 'B' => LetterLiteral::B,
             'c' | 'C' => {
                 if let Some(&next_char) = chars.peek() {
